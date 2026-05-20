@@ -6,23 +6,20 @@
     <title>Smart City Depok - Mental Health Safe Zone System</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
     <style>
-        /* Custom scrollbar biar matching sama soft theme */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #34d399; border-radius: 4px; }
         
-        /* Animasi nafas untuk fitur calming bubble */
         @keyframes breathe {
             0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(244, 63, 94, 0.2); background-color: #fff1f2; }
             50% { transform: scale(1.15); box-shadow: 0 0 45px rgba(52, 211, 153, 0.4); background-color: #d1fae5; }
         }
-        .breathing-bubble {
-            animation: breathe 7s infinite ease-in-out;
-        }
+        .breathing-bubble { animation: breathe 7s infinite ease-in-out; }
 
-        /* Efek bayangan gedung 3D pseudo-LOD1 di peta */
         .lod1-building {
             filter: drop-shadow(4px 6px 3px rgba(15, 23, 42, 0.15));
             transition: all 0.3s ease;
@@ -30,6 +27,15 @@
         .lod1-building:hover {
             fill-opacity: 0.9;
             stroke-width: 2;
+        }
+
+        /* Sinkronisasi sistem display peta dari skrip 3D view lo */
+        #map-leaflet, #map-mapbox {
+            width: 100%;
+            height: 100%;
+        }
+        #map-mapbox {
+            display: none;
         }
     </style>
 </head>
@@ -96,7 +102,6 @@
         </div>
     </div>
 
-
     <header class="border-b border-pink-100 bg-white/80 backdrop-blur-md sticky top-0 z-[2000] px-6 py-4 flex justify-between items-center shadow-sm">
         <div class="flex items-center gap-2">
             <div class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></div>
@@ -115,15 +120,15 @@
                 <h2 class="text-xs font-bold text-purple-500 uppercase tracking-wider mb-2">🎭 Bagaimana Perasaanmu Hari Ini?</h2>
                 <div class="grid grid-cols-1 gap-2">
                     <button onclick="filterByMood('anxious', this)" class="mood-btn p-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-left flex items-center gap-3 cursor-pointer group">
-                        <span class="text-xl bg-white p-1 rounded-lg shadow-xs group-hover:scale-110 transition-transform">🥺</span>
+                        <span class="text-xl bg-white p-1 rounded-lg">🥺</span>
                         <div><span class="text-xs font-bold text-amber-800 block">Cemas / Panik</span><span class="text-[10px] text-amber-600 block">Rute sunyi & damai</span></div>
                     </button>
                     <button onclick="filterByMood('burnout', this)" class="mood-btn p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/30 text-left flex items-center gap-3 cursor-pointer group">
-                        <span class="text-xl bg-white p-1 rounded-lg shadow-xs group-hover:scale-110 transition-transform">🤯</span>
+                        <span class="text-xl bg-white p-1 rounded-lg">🤯</span>
                         <div><span class="text-xs font-bold text-indigo-800 block">Burnout (Nugas/Kuliah)</span><span class="text-[10px] text-indigo-600 block">Cari Ruang Hijau & Wahana Liburan</span></div>
                     </button>
                     <button onclick="filterByMood('lonely', this)" class="mood-btn p-2.5 rounded-xl border border-rose-200 bg-rose-50/30 text-left flex items-center gap-3 cursor-pointer group">
-                        <span class="text-xl bg-white p-1 rounded-lg shadow-xs group-hover:scale-110 transition-transform">😔</span>
+                        <span class="text-xl bg-white p-1 rounded-lg">😔</span>
                         <div><span class="text-xs font-bold text-rose-800 block">Kesepian / Penat</span><span class="text-[10px] text-rose-600 block">Spot Ngopi (WFC) & Lapangan Olahraga</span></div>
                     </button>
                 </div>
@@ -135,7 +140,7 @@
                     <span>🗺️</span> Faktor Stress-Relief Hubs
                 </h2>
                 <div class="space-y-2">
-                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-50 transition-colors">
+                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-emerald-50 transition-colors">
                         <div class="flex items-center gap-2.5">
                             <input type="checkbox" id="check-cafe" checked onchange="toggleLayers()" class="accent-amber-500 h-4 w-4">
                             <span class="text-xs font-bold text-slate-700">Coffee Shop / WFC Hub (Ngopi)</span>
@@ -167,9 +172,9 @@
                 <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
                     <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
                         <span>Skala Tinggi Gedung 3D</span>
-                        <span id="height-val" class="text-indigo-600">1.0x</span>
+                        <span id="height-val" class="text-indigo-600">1x</span>
                     </div>
-                    <input type="range" min="0" max="2" step="0.5" value="1" oninput="adjust3DHeight(this.value)" class="w-full accent-indigo-500 cursor-pointer">
+                    <input type="range" min="0" max="3" step="0.5" value="1" oninput="adjust3DHeight(this.value)" class="w-full accent-indigo-500 cursor-pointer">
                 </div>
             </div>
 
@@ -197,13 +202,13 @@
                 </div>
                 <div class="flex bg-slate-200 p-1 rounded-xl">
                     <button id="btn-2d" onclick="switchEngine('2d')" class="px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs cursor-pointer">2D View</button>
-                    <button id="btn-3d" onclick="switchEngine('3d')" class="px-3 py-1 text-xs font-bold rounded-lg text-slate-500 cursor-pointer hover:text-slate-800">3D Rotate (360°)</button>
+                    <button id="btn-3d" onclick="switchEngine('3d')" class="px-3 py-1 text-xs font-bold rounded-lg text-slate-500 cursor-pointer hover:text-slate-800">3D View</button>
                 </div>
             </div>
             
             <div class="w-full flex-1 relative">
                 <div id="map-leaflet" class="absolute inset-0 z-10"></div>
-                <div id="map-mapbox" class="absolute inset-0 z-0 opacity-0 pointer-events-none"></div>
+                <div id="map-mapbox" class="absolute inset-0 z-0"></div>
             </div>
         </section>
 
@@ -213,25 +218,23 @@
         <div class="bg-white rounded-3xl p-6 max-w-md w-full text-center shadow-2xl border border-emerald-500/10">
             <h3 class="text-xl font-bold text-slate-800 mb-1">Ambil Nafas Sejenak 🧘</h3>
             <p class="text-xs text-slate-500 mb-6">Ikuti detak lingkaran di bawah untuk merilekskan pikiranmu</p>
-            
             <div class="w-40 h-40 rounded-full bg-rose-50 mx-auto flex items-center justify-center breathing-bubble mb-6 shadow-inner">
                 <span id="breath-text" class="text-rose-800 font-extrabold tracking-wide text-xs pointer-events-none">Inhale ... Exhale</span>
             </div>
-
             <p class="text-xs text-slate-400 italic mb-6">"Sadari nafasmu, rasakan ketenangan mengalir di sekitarmu."</p>
-            <button onclick="toggleBreathingModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
-                Kembali ke Peta
-            </button>
+            <button onclick="toggleBreathingModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition-colors cursor-pointer">Kembali ke Peta</button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
     <script>
-        // INPUT TOKEN MAPBOX AKTIF KELOMPOK LO
+        /* =========================
+           TOKEN MAPBOX
+        ========================= */
         mapboxgl.accessToken = 'pk.eyJ1IjoicmFpaGFuYXJzeTIxMiIsImEiOiJjbXBlY3FjamgwMnlhMnhzajVjd2U3bXBhIn0.TkmPp8FNvfEmY-RPhg75Dw'; 
 
-        // 1. DATA SPASIAL LOKASI DEPOK
+        /* =========================
+           DATA LOKASI
+        ========================= */
         const locations = [
             { name: "Gejayan Coffee & WFC Sanctuary", coord: [-7.7690, 110.3901], type: "cafe", moodTag: "lonely", info: "Kebisingan: 38dB | Sedia Wifi Kencang & Pohon Rimbun" },
             { name: "Seturan Tennis & Padel Arena", coord: [-7.7662, 110.4095], type: "sport", moodTag: "lonely", info: "Fasilitas olahraga aktif pelepas penat" },
@@ -240,6 +243,9 @@
             { name: "Babarsari Quiet Library & Space", coord: [-7.7785, 110.4135], type: "cafe", moodTag: "anxious", info: "Zona kedap suara alami, cocok buat menenangkan diri" }
         ];
 
+        /* =========================
+           DATA GEDUNG LOD1
+        ========================= */
         const buildingBlocks = [
             { name: "Blok Gedung Kampus Terpadu Babarsari", polygon: [[110.4120, -7.7790], [110.4120, -7.7810], [110.4140, -7.7810], [110.4140, -7.7790]], baseHeight: 40 },
             { name: "Blok Gedung Shopping & Entertainment Mall", polygon: [[110.4005, -7.7820], [110.4005, -7.7835], [110.4025, -7.7835], [110.4025, -7.7820]], baseHeight: 60 },
@@ -248,22 +254,22 @@
 
         let leafletMarkerGroup;
         let leafletGeometries = [];
-        let buildingLayers = []; // Wadah layer bangunan 2D di Leaflet
+        let buildingLayers = []; 
 
-        // 2. INITIALIZE LEAFLET ENGINE (MODE 2D VIEW)
+        /* =========================
+           LEAFLET MAP (2D View)
+        ========================= */
         const leafletMap = L.map('map-leaflet', { zoomControl: true }).setView([-7.7712, 110.3995], 14);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(leafletMap);
         leafletMarkerGroup = L.layerGroup().addTo(leafletMap);
 
         if (leafletMap.touchExtend) { leafletMap.touchExtend.enable(); }
 
-        // Fungsi Render Model Gedung di Leaflet (2D View)
         function renderLeafletBuildings(scale = 1) {
             buildingLayers.forEach(layer => leafletMap.removeLayer(layer));
             buildingLayers = [];
 
             buildingBlocks.forEach(b => {
-                // Konversi urutan koordinat [Lng, Lat] ke [Lat, Lng] khusus Leaflet
                 let leafletCoords = b.polygon.map(coord => [coord[1], coord[0]]);
                 let currentHeight = b.baseHeight * scale;
                 let fillCol = currentHeight > 30 ? '#a5b4fc' : '#cbd5e1'; 
@@ -281,42 +287,90 @@
             });
         }
 
-        // 3. INITIALIZE MAPBOX ENGINE (MODE 3D ROTATE 360°)
+        /* =========================
+           MAPBOX 3D (3D View - Standard V3)
+        ========================= */
         const mapboxMap = new mapboxgl.Map({
             container: 'map-mapbox',
-            style: 'mapbox://styles/mapbox/light-v11',
+            style: 'mapbox://styles/mapbox/standard', // Style asli bawaan yang memunculkan tekstur 3D kota
             center: [110.3995, -7.7712],
-            zoom: 13.8,
-            pitch: 55, 
-            bearing: -10, 
-            interactive: true
+            zoom: 15,
+            pitch: 60, 
+            bearing: -20, 
+            antialias: true
         });
 
-        mapboxMap.on('load', () => {
-            let features = buildingBlocks.map(b => ({
-                type: "Feature",
-                properties: { height: b.baseHeight, name: b.name },
-                geometry: { type: "Polygon", coordinates: [[...b.polygon, b.polygon[0]]] }
-            }));
+        /* =========================
+           NAVIGATION CONTROL
+        ========================= */
+        mapboxMap.addControl(new mapboxgl.NavigationControl());
 
-            mapboxMap.addSource('buildings-3d', { type: 'geojson', data: { type: 'FeatureCollection', features: features } });
+        /* =========================
+           BUILDING EXTRUSION
+        ========================= */
+        mapboxMap.on('load', () => {
+            const geojson = {
+                type: 'FeatureCollection',
+                features: buildingBlocks.map(b => ({
+                    type: 'Feature',
+                    properties: { name: b.name, height: b.baseHeight },
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [[...b.polygon, b.polygon[0]]]
+                    }
+                }))
+            };
+
+            mapboxMap.addSource('buildings', { type: 'geojson', data: geojson });
             
             mapboxMap.addLayer({
-                id: 'room-extrusion',
+                id: '3d-buildings',
                 type: 'fill-extrusion',
-                source: 'buildings-3d',
+                source: 'buildings',
                 paint: {
-                    'fill-extrusion-color': '#a5b4fc',
+                    'fill-extrusion-color': '#8b5cf6',
                     'fill-extrusion-height': ['get', 'height'],
                     'fill-extrusion-base': 0,
-                    'fill-extrusion-opacity': 0.75
+                    'fill-extrusion-opacity': 0.85
                 }
             });
 
             renderMapboxMarkers();
         });
 
-        // 4. FUNCTION SWITCH ENGINE (2D <> 3D)
+        /* =========================
+           MAPBOX MARKERS
+        ========================= */
+        let mapboxMarkers = [];
+        function renderMapboxMarkers() {
+            mapboxMarkers.forEach(m => m.remove());
+            mapboxMarkers = [];
+
+            const showCafe = document.getElementById('check-cafe').checked;
+            const showSport = document.getElementById('check-sport').checked;
+            const showLeisure = document.getElementById('check-leisure').checked;
+
+            locations.forEach(loc => {
+                if (((loc.type === 'cafe' && showCafe) || (loc.type === 'sport' && showSport) || (loc.type === 'leisure' && showLeisure)) && (currentActiveMood === 'all' || loc.moodTag === currentActiveMood)) {
+                    let color = loc.type === 'cafe' ? '#f59e0b' : loc.type === 'sport' ? '#0ea5e9' : '#d946ef';
+                    
+                    let el = document.createElement('div');
+                    el.style.width = '14px'; el.style.height = '14px';
+                    el.style.borderRadius = '50%';
+                    el.style.background = color;
+                    el.style.border = '2px solid white';
+                    el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+
+                    let popup = new mapboxgl.Popup({ offset: 10 }).setHTML(`<b>📍 ${loc.name}</b><br><p style="font-size:11px;color:#666">${loc.info}</p>`);
+                    let marker = new mapboxgl.Marker(el).setLngLat([loc.coord[1], loc.coord[0]]).setPopup(popup).addTo(mapboxMap);
+                    mapboxMarkers.push(marker);
+                }
+            });
+        }
+
+        /* =========================
+           SWITCH 2D 3D
+        ========================= */
         function switchEngine(type) {
             currentEngine = type;
             const btn2d = document.getElementById('btn-2d');
@@ -325,22 +379,24 @@
             const elMapbox = document.getElementById('map-mapbox');
 
             if (type === '2d') {
+                elLeaflet.style.display = 'block';
+                elMapbox.style.display = 'none';
                 btn2d.className = "px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs cursor-pointer";
                 btn3d.className = "px-3 py-1 text-xs font-bold rounded-lg text-slate-500 cursor-pointer hover:text-slate-800";
-                elLeaflet.style.zIndex = "10"; elLeaflet.style.opacity = "1";
-                elMapbox.style.zIndex = "0"; elMapbox.style.opacity = "0"; elMapbox.style.pointerEvents = "none";
                 renderLeafletFeatures(currentActiveMood);
             } else {
+                elLeaflet.style.display = 'none';
+                elMapbox.style.display = 'block';
                 btn3d.className = "px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs cursor-pointer";
                 btn2d.className = "px-3 py-1 text-xs font-bold rounded-lg text-slate-500 cursor-pointer hover:text-slate-800";
-                elLeaflet.style.zIndex = "0"; elLeaflet.style.opacity = "0";
-                elMapbox.style.zIndex = "10"; elMapbox.style.opacity = "1"; elMapbox.style.pointerEvents = "auto";
-                mapboxMap.resize();
+                setTimeout(() => { mapboxMap.resize(); }, 300);
                 renderMapboxMarkers();
             }
         }
 
-        // 5. RENDER LOGIC UNTUK LEAFLET (2D)
+        /* =========================
+           RENDER LOGIC LEAFLET
+        ========================= */
         function renderLeafletFeatures(filterMood = 'all') {
             leafletMarkerGroup.clearLayers();
             leafletGeometries.forEach(g => leafletMap.removeLayer(g));
@@ -364,35 +420,11 @@
             });
         }
 
-        // 6. RENDER LOGIC UNTUK MAPBOX (3D)
-        let mapboxMarkers = [];
-        function renderMapboxMarkers() {
-            mapboxMarkers.forEach(m => m.remove());
-            mapboxMarkers = [];
-
-            const showCafe = document.getElementById('check-cafe').checked;
-            const showSport = document.getElementById('check-sport').checked;
-            const showLeisure = document.getElementById('check-leisure').checked;
-
-            locations.forEach(loc => {
-                if (((loc.type === 'cafe' && showCafe) || (loc.type === 'sport' && showSport) || (loc.type === 'leisure' && showLeisure)) && (currentActiveMood === 'all' || loc.moodTag === currentActiveMood)) {
-                    let mColor = loc.type === 'cafe' ? '#f59e0b' : loc.type === 'sport' ? '#0ea5e9' : '#d946ef';
-                    
-                    let el = document.createElement('div');
-                    el.style.width = '14px'; el.style.height = '14px';
-                    el.style.backgroundColor = mColor; el.style.borderRadius = '50%';
-                    el.style.border = '2px solid white'; el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-
-                    let popup = new mapboxgl.Popup({ offset: 10 }).setHTML(`<b>📍 ${loc.name}</b><br><p style="font-size:11px;color:#666">${loc.info}</p>`);
-                    let m = new mapboxgl.Marker(el).setLngLat([loc.coord[1], loc.coord[0]]).setPopup(popup).addTo(mapboxMap);
-                    mapboxMarkers.push(m);
-                }
-            });
-        }
-
-        // 7. CORE UI INTERACTION CONTROLLERS
+        /* =========================
+           HEIGHT SLIDER & CONTROLLERS
+        ========================= */
         function filterByMood(mood, buttonElement) {
-            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-purple-400', 'bg-white', 'shadow-sm'));
+            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-purple-400', 'bg-white'));
             buttonElement.classList.add('ring-2', 'ring-purple-400', 'bg-white');
             document.getElementById('reset-btn').classList.remove('hidden');
             
@@ -437,8 +469,8 @@
         function adjust3DHeight(val) {
             document.getElementById('height-val').textContent = val + "x";
             renderLeafletBuildings(parseFloat(val));
-            if (mapboxMap.getLayer('room-extrusion')) {
-                mapboxMap.setPaintProperty('room-extrusion', 'fill-extrusion-height', ['*', ['get', 'height'], parseFloat(val)]);
+            if (mapboxMap.getLayer('3d-buildings')) {
+                mapboxMap.setPaintProperty('3d-buildings', 'fill-extrusion-height', ['*', ['get', 'height'], parseFloat(val)]);
             }
         }
 
@@ -466,7 +498,7 @@
             }
         }
 
-        // Eksekusi Render Awal saat Dokumen Siap
+        // Jalankan render inisialisasi awal
         renderLeafletFeatures('all');
         renderLeafletBuildings(1);
     </script>
