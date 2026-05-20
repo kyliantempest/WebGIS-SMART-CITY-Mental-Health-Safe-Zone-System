@@ -198,7 +198,7 @@
         <section class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm lg:col-span-3 flex flex-col min-h-[580px] relative">
             <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center z-[1500]">
                 <div class="flex items-center gap-2">
-                    <span id="system-status" class="text-xs text-slate-500 font-bold">Spatial Engine: Wilayah Kecamatan Depok Aktif</span>
+                    <span id="system-status" class="text-xs text-slate-500 font-bold">Spatial Engine: Wilayah Kecamatan Depok Active</span>
                 </div>
                 <div class="flex bg-slate-200 p-1 rounded-xl">
                     <button id="btn-2d" onclick="switchEngine('2d')" class="px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs cursor-pointer">2D View</button>
@@ -255,6 +255,7 @@
         let leafletMarkerGroup;
         let leafletGeometries = [];
         let buildingLayers = []; 
+        let currentEngine = '2d';
 
         /* =========================
            LEAFLET MAP (2D View)
@@ -288,11 +289,11 @@
         }
 
         /* =========================
-           MAPBOX 3D (3D View - Standard V3)
+           MAPBOX 3D (3D View - Standard Style)
         ========================= */
         const mapboxMap = new mapboxgl.Map({
             container: 'map-mapbox',
-            style: 'mapbox://styles/mapbox/standard', // Style asli bawaan yang memunculkan tekstur 3D kota
+            style: 'mapbox://styles/mapbox/standard', 
             center: [110.3995, -7.7712],
             zoom: 15,
             pitch: 60, 
@@ -300,15 +301,10 @@
             antialias: true
         });
 
-        /* =========================
-           NAVIGATION CONTROL
-        ========================= */
         mapboxMap.addControl(new mapboxgl.NavigationControl());
 
-        /* =========================
-           BUILDING EXTRUSION
-        ========================= */
-        mapboxMap.on('load', () => {
+        // Event listener 'style.load' menjamin layer 3D termuat sempurna tanpa crash basemap bawaan GitHub
+        mapboxMap.on('style.load', () => {
             const geojson = {
                 type: 'FeatureCollection',
                 features: buildingBlocks.map(b => ({
@@ -359,7 +355,7 @@
                     el.style.borderRadius = '50%';
                     el.style.background = color;
                     el.style.border = '2px solid white';
-                    el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+                    el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
 
                     let popup = new mapboxgl.Popup({ offset: 10 }).setHTML(`<b>📍 ${loc.name}</b><br><p style="font-size:11px;color:#666">${loc.info}</p>`);
                     let marker = new mapboxgl.Marker(el).setLngLat([loc.coord[1], loc.coord[0]]).setPopup(popup).addTo(mapboxMap);
