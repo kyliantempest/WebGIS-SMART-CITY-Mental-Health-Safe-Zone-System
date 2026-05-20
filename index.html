@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart City Depok - Mental Health Safe Zone System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        /* Custom scrollbar biar matching sama soft theme */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #34d399; border-radius: 4px; }
+        
+        /* Animasi nafas untuk fitur calming bubble */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(244, 63, 94, 0.2); background-color: #fff1f2; }
+            50% { transform: scale(1.15); box-shadow: 0 0 45px rgba(52, 211, 153, 0.4); background-color: #d1fae5; }
+        }
+        .breathing-bubble {
+            animation: breathe 7s infinite ease-in-out;
+        }
+
+        /* Efek bayangan gedung 3D pseudo-LOD1 di peta */
+        .lod1-building {
+            filter: drop-shadow(4px 6px 3px rgba(15, 23, 42, 0.15));
+            transition: all 0.3s ease;
+        }
+        .lod1-building:hover {
+            fill-opacity: 0.9;
+            stroke-width: 2;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-tr from-[#f0f9ff] via-[#f5f3ff] to-[#f0fdf4] text-slate-700 font-sans antialiased min-h-screen flex flex-col transition-all duration-500">
+
+    <div id="intro-screen" class="fixed inset-0 bg-radial from-slate-950 via-slate-900 to-[#0b1329] z-[9999] flex flex-col justify-between p-6 md:p-12 transition-all duration-1000 opacity-100 overflow-y-auto">
+        
+        <div class="w-full text-center md:text-left">
+            <span class="text-[10px] md:text-xs font-mono tracking-[0.3em] uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-md">
+                Spatial Architecture • Project Showcase
+            </span>
+        </div>
+
+        <div class="max-w-5xl mx-auto text-center my-auto py-8">
+            <h2 class="text-xs md:text-sm font-black tracking-[0.5em] text-indigo-400 uppercase mb-4">SISTEM INFORMASI GEOGRAFIS</h2>
+            <h1 class="text-4xl md:text-7xl font-black text-white tracking-tight leading-none mb-4">
+                SMART <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">CITY</span>
+            </h1>
+            <h3 class="text-2xl md:text-4xl font-extrabold text-slate-300 tracking-wide mb-6">
+                Mental Health Safe Zone System
+            </h3>
+            <p class="text-sm md:text-lg text-slate-400 font-medium max-w-3xl mx-auto leading-relaxed border-t border-b border-slate-800 py-4 mb-8">
+                "Pemetaan Zona Stress Dan Ruang Pemulihan Emosi Untuk Mendukung Smart City Berbasis Kesehatan Mental"
+            </p>
+            
+            <button onclick="exitIntroScreen()" class="group relative inline-flex items-center gap-3 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-slate-950 font-black px-10 py-4 rounded-xl text-sm transition-all shadow-2xl shadow-emerald-400/20 hover:shadow-emerald-400/40 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95">
+                Launch Spatial Platform
+                <span class="group-hover:translate-x-1.5 transition-transform">→</span>
+            </button>
+        </div>
+
+        <div class="w-full max-w-6xl mx-auto border-t border-slate-800/80 pt-6">
+            <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase text-center mb-4">Tim Pengembang Sistem</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                <div class="bg-slate-900/50 border border-slate-800/60 p-2.5 rounded-xl text-center">
+                    <span class="text-[10px] font-bold text-white block truncate">A. Nisrina I.</span>
+                    <span class="text-[9px] font-mono text-emerald-400 block mt-0.5">117230006</span>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-800/60 p-2.5 rounded-xl text-center">
+                    <span class="text-[10px] font-bold text-white block truncate">Amelia Pitra S.</span>
+                    <span class="text-[9px] font-mono text-emerald-400 block mt-0.5">117230017</span>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-800/60 p-2.5 rounded-xl text-center">
+                    <span class="text-[10px] font-bold text-white block truncate">Dendi D.</span>
+                    <span class="text-[9px] font-mono text-emerald-400 block mt-0.5">117230024</span>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-800/60 p-2.5 rounded-xl text-center">
+                    <span class="text-[10px] font-bold text-white block truncate">Vera Agustin D.</span>
+                    <span class="text-[9px] font-mono text-emerald-400 block mt-0.5">117230025</span>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-800/60 p-2.5 rounded-xl text-center">
+                    <span class="text-[10px] font-bold text-white block truncate">Izza Anggitha</span>
+                    <span class="text-[9px] font-mono text-emerald-400 block mt-0.5">117230030</span>
+                </div>
+                <div class="bg-emerald-950/40 border border-emerald-500/30 p-2.5 rounded-xl text-center ring-1 ring-emerald-500/20">
+                    <span class="text-[10px] font-extrabold text-emerald-300 block truncate">Raihan Arsy R.</span>
+                    <span class="text-[9px] font-mono text-white bg-emerald-500/30 px-1 rounded block mt-0.5 font-bold">117230067</span>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-800/60 p-2.5 rounded-xl text-center col-span-2 md:col-span-1">
+                    <span class="text-[10px] font-bold text-white block truncate">Tsaqif Rajendra</span>
+                    <span class="text-[9px] font-mono text-emerald-400 block mt-0.5">117230083</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <header class="border-b border-pink-100 bg-white/80 backdrop-blur-md sticky top-0 z-[2000] px-6 py-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></div>
+            <span class="font-black tracking-wider text-slate-800 text-lg">🌈 Mind<span class="text-emerald-500 font-bold">Scape</span> <span class="text-indigo-500 font-light text-base">Depok</span></span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="toggleBreathingModal()" class="bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-md cursor-pointer">🧘 Take a Breath</button>
+            <button class="bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md">🚨 SOS Help</button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <aside class="flex flex-col gap-5 lg:col-span-1">
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h2 class="text-xs font-bold text-purple-500 uppercase tracking-wider mb-2">🎭 Bagaimana Perasaanmu Hari Ini?</h2>
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="filterByMood('anxious', this)" class="mood-btn p-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-left flex items-center gap-3 cursor-pointer group">
+                        <span class="text-xl bg-white p-1 rounded-lg shadow-xs group-hover:scale-110 transition-transform">🥺</span>
+                        <div><span class="text-xs font-bold text-amber-800 block">Cemas / Panik</span><span class="text-[10px] text-amber-600 block">Rute sunyi & damai</span></div>
+                    </button>
+                    <button onclick="filterByMood('burnout', this)" class="mood-btn p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/30 text-left flex items-center gap-3 cursor-pointer group">
+                        <span class="text-xl bg-white p-1 rounded-lg shadow-xs group-hover:scale-110 transition-transform">🤯</span>
+                        <div><span class="text-xs font-bold text-indigo-800 block">Burnout (Nugas/Kuliah)</span><span class="text-[10px] text-indigo-600 block">Cari Ruang Hijau & Wahana Liburan</span></div>
+                    </button>
+                    <button onclick="filterByMood('lonely', this)" class="mood-btn p-2.5 rounded-xl border border-rose-200 bg-rose-50/30 text-left flex items-center gap-3 cursor-pointer group">
+                        <span class="text-xl bg-white p-1 rounded-lg shadow-xs group-hover:scale-110 transition-transform">😔</span>
+                        <div><span class="text-xs font-bold text-rose-800 block">Kesepian / Penat</span><span class="text-[10px] text-rose-600 block">Spot Ngopi (WFC) & Lapangan Olahraga</span></div>
+                    </button>
+                </div>
+                <button id="reset-btn" onclick="resetMood()" class="mt-3 w-full py-2 rounded-xl border border-dashed border-slate-300 text-slate-500 font-medium text-xs hidden cursor-pointer">🔄 Bersihkan Filter Navigasi</button>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h2 class="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    <span>🗺️</span> Faktor Stress-Relief Hubs
+                </h2>
+                <div class="space-y-2">
+                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-50 transition-colors">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" id="check-cafe" checked onchange="toggleLayers()" class="accent-amber-500 h-4 w-4">
+                            <span class="text-xs font-bold text-slate-700">Coffee Shop / WFC Hub (Ngopi)</span>
+                        </div>
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    </label>
+                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-sky-50/50 border border-sky-100 cursor-pointer hover:bg-sky-50 transition-colors">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" id="check-sport" checked onchange="toggleLayers()" class="accent-sky-500 h-4 w-4">
+                            <span class="text-xs font-bold text-slate-700">Sport Space (Tenis, Padel, Badminton)</span>
+                        </div>
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                    </label>
+                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-purple-50/50 border border-purple-100 cursor-pointer hover:bg-purple-50 transition-colors">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" id="check-leisure" checked onchange="toggleLayers()" class="accent-purple-500 h-4 w-4">
+                            <span class="text-xs font-bold text-slate-700">Wahana Liburan & Hiburan</span>
+                        </div>
+                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h2 class="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span>🏢</span> 3D City Modeling (LOD 1)
+                </h2>
+                <p class="text-[10px] text-slate-400 mb-2.5">Manipulasi tinggi ekstrusi bangunan fisik di area Depok Sleman:</p>
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                    <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                        <span>Skala Tinggi Gedung 3D</span>
+                        <span id="height-val" class="text-indigo-600">1.0x</span>
+                    </div>
+                    <input type="range" min="0" max="2" step="0.5" value="1" oninput="adjust3DHeight(this.value)" class="w-full accent-indigo-500 cursor-pointer">
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600 rounded-2xl p-4 text-white shadow-md">
+                <h3 class="text-xs font-bold uppercase tracking-wider opacity-90 mb-2">📊 Kondisi Depok Saat Ini</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white/10 p-2 rounded-xl">
+                        <span class="text-[10px] block opacity-80">Kebisingan Rata-rata</span>
+                        <span class="text-base font-black">50 dB</span>
+                        <span class="text-[9px] bg-emerald-400 text-slate-900 px-1 py-0.5 rounded font-bold ml-1">Ideal</span>
+                    </div>
+                    <div class="bg-white/10 p-2 rounded-xl">
+                        <span class="text-[10px] block opacity-80">Kualitas Udara (AQI)</span>
+                        <span class="text-base font-black">45</span>
+                        <span class="text-[9px] bg-emerald-400 text-slate-900 px-1 py-0.5 rounded font-bold ml-1">Baik</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm lg:col-span-3 flex flex-col min-h-[580px] relative">
+            <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center z-[1500]">
+                <div class="flex items-center gap-2">
+                    <span id="system-status" class="text-xs text-slate-500 font-bold">Spatial Engine: Wilayah Kecamatan Depok Aktif</span>
+                </div>
+                <div class="flex bg-slate-200 p-1 rounded-xl">
+                    <button id="btn-2d" onclick="switchEngine('2d')" class="px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs cursor-pointer">2D View</button>
+                    <button id="btn-3d" onclick="switchEngine('3d')" class="px-3 py-1 text-xs font-bold rounded-lg text-slate-500 cursor-pointer hover:text-slate-800">3D Rotate (360°)</button>
+                </div>
+            </div>
+            
+            <div class="w-full flex-1 relative">
+                <div id="map-leaflet" class="absolute inset-0 z-10"></div>
+                <div id="map-mapbox" class="absolute inset-0 z-0 opacity-0 pointer-events-none"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="breathing-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[3000] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full text-center shadow-2xl border border-emerald-500/10">
+            <h3 class="text-xl font-bold text-slate-800 mb-1">Ambil Nafas Sejenak 🧘</h3>
+            <p class="text-xs text-slate-500 mb-6">Ikuti detak lingkaran di bawah untuk merilekskan pikiranmu</p>
+            
+            <div class="w-40 h-40 rounded-full bg-rose-50 mx-auto flex items-center justify-center breathing-bubble mb-6 shadow-inner">
+                <span id="breath-text" class="text-rose-800 font-extrabold tracking-wide text-xs pointer-events-none">Inhale ... Exhale</span>
+            </div>
+
+            <p class="text-xs text-slate-400 italic mb-6">"Sadari nafasmu, rasakan ketenangan mengalir di sekitarmu."</p>
+            <button onclick="toggleBreathingModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                Kembali ke Peta
+            </button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    <script>
+        // INPUT TOKEN MAPBOX AKTIF KELOMPOK LO
+        mapboxgl.accessToken = 'pk.eyJ1IjoicmFpaGFuYXJzeTIxMiIsImEiOiJjbXBlY3FjamgwMnlhMnhzajVjd2U3bXBhIn0.TkmPp8FNvfEmY-RPhg75Dw'; 
+
+        // 1. DATA SPASIAL LOKASI DEPOK
+        const locations = [
+            { name: "Gejayan Coffee & WFC Sanctuary", coord: [-7.7690, 110.3901], type: "cafe", moodTag: "lonely", info: "Kebisingan: 38dB | Sedia Wifi Kencang & Pohon Rimbun" },
+            { name: "Seturan Tennis & Padel Arena", coord: [-7.7662, 110.4095], type: "sport", moodTag: "lonely", info: "Fasilitas olahraga aktif pelepas penat" },
+            { name: "Pusat Wahana Bermain & Arcade Zone", coord: [-7.7815, 110.4012], type: "leisure", moodTag: "burnout", info: "Hiburan rekreasi pelepas stres akhir pekan" },
+            { name: "Lembah UGM Green Zone & Tennis", coord: [-7.7705, 110.3835], type: "sport", moodTag: "burnout", info: "Kawasan lari & tenis terbuka hijau" },
+            { name: "Babarsari Quiet Library & Space", coord: [-7.7785, 110.4135], type: "cafe", moodTag: "anxious", info: "Zona kedap suara alami, cocok buat menenangkan diri" }
+        ];
+
+        const buildingBlocks = [
+            { name: "Blok Gedung Kampus Terpadu Babarsari", polygon: [[110.4120, -7.7790], [110.4120, -7.7810], [110.4140, -7.7810], [110.4140, -7.7790]], baseHeight: 40 },
+            { name: "Blok Gedung Shopping & Entertainment Mall", polygon: [[110.4005, -7.7820], [110.4005, -7.7835], [110.4025, -7.7835], [110.4025, -7.7820]], baseHeight: 60 },
+            { name: "Blok Kompleks Olahraga Seturan Arena", polygon: [[110.4080, -7.7650], [110.4080, -7.7670], [110.4100, -7.7670], [110.4100, -7.7650]], baseHeight: 25 }
+        ];
+
+        let leafletMarkerGroup;
+        let leafletGeometries = [];
+        let buildingLayers = []; // Wadah layer bangunan 2D di Leaflet
+
+        // 2. INITIALIZE LEAFLET ENGINE (MODE 2D VIEW)
+        const leafletMap = L.map('map-leaflet', { zoomControl: true }).setView([-7.7712, 110.3995], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(leafletMap);
+        leafletMarkerGroup = L.layerGroup().addTo(leafletMap);
+
+        if (leafletMap.touchExtend) { leafletMap.touchExtend.enable(); }
+
+        // Fungsi Render Model Gedung di Leaflet (2D View)
+        function renderLeafletBuildings(scale = 1) {
+            buildingLayers.forEach(layer => leafletMap.removeLayer(layer));
+            buildingLayers = [];
+
+            buildingBlocks.forEach(b => {
+                // Konversi urutan koordinat [Lng, Lat] ke [Lat, Lng] khusus Leaflet
+                let leafletCoords = b.polygon.map(coord => [coord[1], coord[0]]);
+                let currentHeight = b.baseHeight * scale;
+                let fillCol = currentHeight > 30 ? '#a5b4fc' : '#cbd5e1'; 
+
+                let poly = L.polygon(leafletCoords, {
+                    color: '#818cf8',
+                    weight: 1.5,
+                    fillColor: fillCol,
+                    fillOpacity: 0.65,
+                    className: 'lod1-building'
+                }).addTo(leafletMap);
+
+                poly.bindPopup(`<b>🏢 ${b.name}</b><br>Tinggi Bangunan (LOD 1): ${currentHeight} meter`);
+                buildingLayers.push(poly);
+            });
+        }
+
+        // 3. INITIALIZE MAPBOX ENGINE (MODE 3D ROTATE 360°)
+        const mapboxMap = new mapboxgl.Map({
+            container: 'map-mapbox',
+            style: 'mapbox://styles/mapbox/light-v11',
+            center: [110.3995, -7.7712],
+            zoom: 13.8,
+            pitch: 55, 
+            bearing: -10, 
+            interactive: true
+        });
+
+        mapboxMap.on('load', () => {
+            let features = buildingBlocks.map(b => ({
+                type: "Feature",
+                properties: { height: b.baseHeight, name: b.name },
+                geometry: { type: "Polygon", coordinates: [[...b.polygon, b.polygon[0]]] }
+            }));
+
+            mapboxMap.addSource('buildings-3d', { type: 'geojson', data: { type: 'FeatureCollection', features: features } });
+            
+            mapboxMap.addLayer({
+                id: 'room-extrusion',
+                type: 'fill-extrusion',
+                source: 'buildings-3d',
+                paint: {
+                    'fill-extrusion-color': '#a5b4fc',
+                    'fill-extrusion-height': ['get', 'height'],
+                    'fill-extrusion-base': 0,
+                    'fill-extrusion-opacity': 0.75
+                }
+            });
+
+            renderMapboxMarkers();
+        });
+
+        // 4. FUNCTION SWITCH ENGINE (2D <> 3D)
+        function switchEngine(type) {
+            currentEngine = type;
+            const btn2d = document.getElementById('btn-2d');
+            const btn3d = document.getElementById('btn-3d');
+            const elLeaflet = document.getElementById('map-leaflet');
+            const elMapbox = document.getElementById('map-mapbox');
+
+            if (type === '2d') {
+                btn2d.className = "px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs cursor-pointer";
+                btn3d.className = "px-3 py-1 text-xs font-bold rounded-lg text-slate-500 cursor-pointer hover:text-slate-800";
+                elLeaflet.style.zIndex = "10"; elLeaflet.style.opacity = "1";
+                elMapbox.style.zIndex = "0"; elMapbox.style.opacity = "0"; elMapbox.style.pointerEvents = "none";
+                renderLeafletFeatures(currentActiveMood);
+            } else {
+                btn3d.className = "px-3 py-1 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs cursor-pointer";
+                btn2d.className = "px-3 py-1 text-xs font-bold rounded-lg text-slate-500 cursor-pointer hover:text-slate-800";
+                elLeaflet.style.zIndex = "0"; elLeaflet.style.opacity = "0";
+                elMapbox.style.zIndex = "10"; elMapbox.style.opacity = "1"; elMapbox.style.pointerEvents = "auto";
+                mapboxMap.resize();
+                renderMapboxMarkers();
+            }
+        }
+
+        // 5. RENDER LOGIC UNTUK LEAFLET (2D)
+        function renderLeafletFeatures(filterMood = 'all') {
+            leafletMarkerGroup.clearLayers();
+            leafletGeometries.forEach(g => leafletMap.removeLayer(g));
+            leafletGeometries = [];
+
+            const showCafe = document.getElementById('check-cafe').checked;
+            const showSport = document.getElementById('check-sport').checked;
+            const showLeisure = document.getElementById('check-leisure').checked;
+
+            locations.forEach(loc => {
+                if (((loc.type === 'cafe' && showCafe) || (loc.type === 'sport' && showSport) || (loc.type === 'leisure' && showLeisure)) && (filterMood === 'all' || loc.moodTag === filterMood)) {
+                    let markerColor = loc.type === 'cafe' ? '#f59e0b' : loc.type === 'sport' ? '#0ea5e9' : '#d946ef';
+                    let marker = L.circleMarker(loc.coord, { radius: 9, fillColor: markerColor, color: '#fff', weight: 2, fillOpacity: 0.9 }).addTo(leafletMarkerGroup);
+                    marker.bindPopup(`<b>📍 ${loc.name}</b><br><span class="text-xs text-slate-500">${loc.info}</span>`);
+
+                    if (filterMood !== 'all') {
+                        let buf = L.circle(loc.coord, { radius: 350, color: markerColor, fillColor: markerColor, fillOpacity: 0.08, weight: 1, dashArray: '4, 4' }).addTo(leafletMap);
+                        leafletGeometries.push(buf);
+                    }
+                }
+            });
+        }
+
+        // 6. RENDER LOGIC UNTUK MAPBOX (3D)
+        let mapboxMarkers = [];
+        function renderMapboxMarkers() {
+            mapboxMarkers.forEach(m => m.remove());
+            mapboxMarkers = [];
+
+            const showCafe = document.getElementById('check-cafe').checked;
+            const showSport = document.getElementById('check-sport').checked;
+            const showLeisure = document.getElementById('check-leisure').checked;
+
+            locations.forEach(loc => {
+                if (((loc.type === 'cafe' && showCafe) || (loc.type === 'sport' && showSport) || (loc.type === 'leisure' && showLeisure)) && (currentActiveMood === 'all' || loc.moodTag === currentActiveMood)) {
+                    let mColor = loc.type === 'cafe' ? '#f59e0b' : loc.type === 'sport' ? '#0ea5e9' : '#d946ef';
+                    
+                    let el = document.createElement('div');
+                    el.style.width = '14px'; el.style.height = '14px';
+                    el.style.backgroundColor = mColor; el.style.borderRadius = '50%';
+                    el.style.border = '2px solid white'; el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+
+                    let popup = new mapboxgl.Popup({ offset: 10 }).setHTML(`<b>📍 ${loc.name}</b><br><p style="font-size:11px;color:#666">${loc.info}</p>`);
+                    let m = new mapboxgl.Marker(el).setLngLat([loc.coord[1], loc.coord[0]]).setPopup(popup).addTo(mapboxMap);
+                    mapboxMarkers.push(m);
+                }
+            });
+        }
+
+        // 7. CORE UI INTERACTION CONTROLLERS
+        function filterByMood(mood, buttonElement) {
+            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-purple-400', 'bg-white', 'shadow-sm'));
+            buttonElement.classList.add('ring-2', 'ring-purple-400', 'bg-white');
+            document.getElementById('reset-btn').classList.remove('hidden');
+            
+            const badge = document.getElementById('active-mood-badge');
+            badge.classList.remove('hidden');
+            currentActiveMood = mood;
+
+            if(mood === 'anxious') {
+                badge.textContent = "Mode: Anti-Anxiety 🕊️";
+                badge.className = "text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold shadow-xs";
+                document.getElementById('system-status').textContent = "Routing engine: Menghitung rute desibel terendah di Depok...";
+            } else if(mood === 'burnout') {
+                badge.textContent = "Mode: Green & Leisure Escape 🌳";
+                badge.className = "text-xs bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full font-bold shadow-xs";
+                document.getElementById('system-status').textContent = "Routing engine: Mengarahkan ke spot wahana & hutan kota...";
+            } else if(mood === 'lonely') {
+                badge.textContent = "Mode: Social Connect Hub 👥";
+                badge.className = "text-xs bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full font-bold shadow-xs";
+                document.getElementById('system-status').textContent = "Routing engine: Menghubungkan ke WFC & area olahraga terdekat...";
+            }
+            
+            if(currentEngine === '2d') renderLeafletFeatures(mood);
+            else renderMapboxMarkers();
+        }
+
+        function resetMood() {
+            document.getElementById('active-mood-badge').classList.add('hidden');
+            document.getElementById('reset-btn').classList.add('hidden');
+            document.getElementById('system-status').textContent = "Spatial Engine: Wilayah Kecamatan Depok Active";
+            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-purple-400', 'bg-white'));
+            currentActiveMood = 'all';
+            
+            if(currentEngine === '2d') renderLeafletFeatures('all');
+            else renderMapboxMarkers();
+        }
+
+        function toggleLayers() {
+            if(currentEngine === '2d') renderLeafletFeatures(currentActiveMood);
+            else renderMapboxMarkers();
+        }
+
+        function adjust3DHeight(val) {
+            document.getElementById('height-val').textContent = val + "x";
+            renderLeafletBuildings(parseFloat(val));
+            if (mapboxMap.getLayer('room-extrusion')) {
+                mapboxMap.setPaintProperty('room-extrusion', 'fill-extrusion-height', ['*', ['get', 'height'], parseFloat(val)]);
+            }
+        }
+
+        function exitIntroScreen() {
+            const intro = document.getElementById('intro-screen');
+            intro.style.opacity = '0';
+            setTimeout(() => { intro.style.display = 'none'; }, 1000); 
+        }
+
+        let breathInterval;
+        function toggleBreathingModal() {
+            const modal = document.getElementById('breathing-modal');
+            const isHidden = modal.classList.toggle('hidden');
+            const breathText = document.getElementById('breath-text');
+
+            if (!isHidden) {
+                let step = 0;
+                breathText.textContent = "Tarik Nafas... (Inhale)";
+                breathInterval = setInterval(() => {
+                    step++;
+                    breathText.textContent = (step % 2 === 1) ? "Hembuskan Perlahan... (Exhale)" : "Tarik Nafas... (Inhale)";
+                }, 3500);
+            } else {
+                clearInterval(breathInterval);
+            }
+        }
+
+        // Eksekusi Render Awal saat Dokumen Siap
+        renderLeafletFeatures('all');
+        renderLeafletBuildings(1);
+    </script>
+</body>
+</html>
